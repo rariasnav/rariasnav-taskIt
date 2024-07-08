@@ -99,8 +99,7 @@ export const GetInMyProfile = () =>{
         if(store.loggedUser && getGallery.length > 0){
             setUserGallery(getGallery.filter( (gallery)=> gallery.user.email === store.loggedUser.email))
         }        
-    },[store.loggedUser, getGallery])
-    console.log(userGallery.length)    
+    },[store.loggedUser, getGallery])    
 
     return(
         <div className="container my-5">
