@@ -1,4 +1,22 @@
 const getState = ({ getStore, getActions, setStore }) => {
+	const baseURL = process.env.BACKEND_URL + "/api";
+	const TOKEN = localStorage.getItem('token');
+
+	const createRequestOptions = (method, body = null, isAuthRequired = false) => {
+		const headers = {'Content-Type': 'application/json'};
+		if (isAuthRequired) {
+			headers['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
+		}
+		return {
+			method,
+			headers,
+			body: body ? JSON.stringify(body) : null
+		};
+	}
+	const handleResponse = async (response) => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return await response.json();
+    };
 	return {
 		store: {
 			message: null,
@@ -14,7 +32,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 					initial: "white"
 				}
 			],
-			baseURL : 'https://legendary-tribble-97999g966jjxh47v-3001.app.github.dev/api',
+			baseURL: 'https://sturdy-broccoli-69gggxgvv49g2x65x-3001.app.github.dev/api',
 			loggedUser: null
 		},
 		actions: {
@@ -24,14 +42,14 @@ const getState = ({ getStore, getActions, setStore }) => {
 			},
 
 			getMessage: async () => {
-				try{
+				try {
 					// fetching data from the backend
 					const resp = await fetch(process.env.BACKEND_URL + "/api/hello")
 					const data = await resp.json()
 					setStore({ message: data.message })
 					// don't forget to return something, that is how the async resolves
 					return data;
-				}catch(error){
+				} catch (error) {
 					console.log("Error loading message from backend", error)
 				}
 			},
@@ -50,114 +68,79 @@ const getState = ({ getStore, getActions, setStore }) => {
 				setStore({ demo: demo });
 			},
 			loadUserDataById: async (id) => {
-				const store = getStore()
 				try {
-					const response = await fetch(`${store.baseURL}/user/${id}`)
-					const data = await response.json()
-
-					if( response.ok ){
-						return data
-					}
-					return false
+					const response = await fetch(`${baseURL}/user/${id}`);
+					return await handleResponse(response);
 				} catch (error) {
-					return false
+					console.error("Error loading user data", error);
+					return false;
 				}
 			},
-			createUser: async (user) => {				
-				const store = getStore()
+			createUser: async (user) => {
 				try {
-					const requestOptions = {
-						method: 'POST',
-						headers: { 'Content-Type' : 'application/json' },
-						body: JSON.stringify(user)
-					}
-					const response = await fetch(`${store.baseURL}/signup`, requestOptions)					
-
-					if(response.ok){
-						return 201
-					}
+					console.log(user);
+					const requestOptions = createRequestOptions('POST', user);
+					console.log(requestOptions);
+					const response = await fetch(`${baseURL}/signup`, requestOptions);
+					console.log(response)
+					if (response.ok) return 201;
 				} catch (error) {
-					
+					console.error("Error creating user", error);
 				}
 			},
 			login: async (email, password) => {
-				const store = getStore()
-				const actions = getActions()
-				try {					
-					const requestOptions = {
-						method : 'POST',
-						headers : { 'Content-Type' : 'application/json'},
-						body : JSON.stringify({
-							"email" : email,
-							"password" : password
-						})
-					}
-					const response = await fetch(`${store.baseURL}/login`, requestOptions)
-					const data = await response.json()
-									
-					if( response.ok){
+				try {
+					const requestOptions = createRequestOptions('POST', { email, password });
+					const response = await fetch(`${baseURL}/login`, requestOptions);
+					const data = await handleResponse(response);
+					if (response.ok) {
 						localStorage.setItem("token", data.access_token);
-						setStore({ loggedUser: data.user })
-						return true
-					}
-					actions.logout()
-					return false			
+						await getActions().getInMyProfile();
+						return true;
+					}					
 				} catch (error) {
-					actions.logout()
-					return false					
+					console.error("Error logging in", error);
 				}
+				getActions().logout()
+				return false
 			},
 			logout: () => {
-				setStore({ loggedUser: false })
-				localStorage.removeItem("token")
+				setStore({ loggedUser: false });
+				localStorage.removeItem("token");
 			},
-			getInMyProfile: async () => {	
-				const store = getStore()
-				const actions = getActions()			
+			getInMyProfile: async () => {
 				try {
-					const requestOptions = {
-						method: 'GET',
-						headers : { 'Authorization': `Bearer ${localStorage.getItem('token')}`},						
-					}
-					const response = await fetch(`${store.baseURL}/profile`, requestOptions)
-					const data = await response.json()
-					
-					if( response.ok ){
-						setStore({ loggedUser: data.user })
-						return true
-					}
-					actions.logout()
-					return false	
-				} catch (error) {
-					actions.logout()
-					return false	
-				}
-			},
-			updateUserInformation: async (user) => {				
-				const store = getStore()
-				const actions = getActions()
-				try {
-					const requestOptions = {
-						method: 'PUT',
-						headers: {'Content-Type': 'application/JSON', 'Authorization': `Bearer ${localStorage.getItem('token')}`},
-						body: JSON.stringify(user)
-					}
-					const response = await fetch(`${store.baseURL}/user_information`, requestOptions)
-					
-					if( response.ok){
-						actions.getInMyProfile()
-						return 201
+					const requestOptions = createRequestOptions('GET', null, true);
+					const response = await fetch(`${baseURL}/profile`, requestOptions);
+					const data = await handleResponse(response);
+					if (response.ok) {
+						setStore({ loggedUser: data.user });
+						return true;
 					}
 				} catch (error) {
-					
+					console.error("Error getting profile information", error);
+				}
+				getActions().logout();
+				return false;
+			},
+			updateUserInformation: async (user) => {
+				try {
+					const requestOptions = createRequestOptions('PUT', user, true);
+					const response = await fetch(`${baseURL}/user_information`, requestOptions);
+					if (response.ok) {
+						await getActions().getInMyProfile();
+						return 201;
+					}
+				} catch (error) {
+					console.error("Error updating user information", error);
 				}
 			},
-			loadTestData: async ()=> {
+			loadTestData: async () => {
 				try {
 					const response = await fetch('https://jsonplaceholder.typicode.com/users')
 					const data = await response.json()
 
-					if(response.ok){
+					if (response.ok) {
 						return data
 					}
 					return false
@@ -165,234 +148,164 @@ const getState = ({ getStore, getActions, setStore }) => {
 					return false
 				}
 			},
-			getCategories: async ()=> {
-				const store = getStore()
+			getCategories: async () => {
 				try {
-					const response = await fetch(`${store.baseURL}/services_category`)
-					const data = await response.json()
-
-					if( response.ok ){
-						return data
-					}
-					return false
+					const response = await fetch(`${baseURL}/services_category`);
+					return await handleResponse(response);
 				} catch (error) {
-					return false
+					console.error("Error getting categories", error);
+					return false;
 				}
 			},
-			getSubcategories: async ()=>{
-				const store = getStore()
+			getSubcategories: async () => {
 				try {
-					const response = await fetch(`${store.baseURL}/services_subcategory`)
-					const data = await response.json()
-
-					if( response.ok ){
-						return data
-					}
-					return false					
+					const response = await fetch(`${baseURL}/services_subcategory`);
+					return await handleResponse(response);
 				} catch (error) {
-					return false
+					console.error("Error getting subcategories", error);
+					return false;
 				}
 			},
-			getCategoriesSubcategories: async ()=>{
-				const store = getStore()
+			getCategoriesSubcategories: async () => {
 				try {
-					const response = await fetch(`${store.baseURL}/services_category_subcategory`)
-					const data = await response.json()
-
-					if( response.ok ){
-						return data
-					}				
-					return false	
+					const response = await fetch(`${baseURL}/services_category_subcategory`)
+					return await handleResponse(response);
 				} catch (error) {
-					return false
+					console.error("Error getting categoriesSubcategories", error);
+					return false;
 				}
 			},
-			postForAService: async (service_request)=>{
-				const store = getStore()
-				const newData = {
+			postForAService: async (service_request) => {
+				const store = getStore();
+				const newData = { 
 					"email": store.loggedUser.email,
 					...service_request
 				}
 				try {
-					const requestOptions = {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/JSON', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-						body: JSON.stringify(newData)
-					}
-					const response = await fetch(`${store.baseURL}/service_request`, requestOptions)
-					if( response.ok ){
-						return 201
-					}
-					
+					const requestOptions = createRequestOptions('POST', newData, true);
+					const response = await fetch(`${baseURL}/service_request`, requestOptions)
+					if (response.ok) return 201;
 				} catch (error) {
-					
+					console.error("Error posting service", error);
 				}
-				
-			},
-			getServicesRequests: async () =>{
-				const store = getStore()
-				try {
-					const requestOptions = {
-						method: 'GET',
-						headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
-					}
-					const response = await fetch(`${store.baseURL}/service_request`, requestOptions)
-					const data = await response.json()
 
-					if(response.ok){
-						return data
-					}
-					return false
-				} 
+			},
+			getServicesRequests: async () => {
+				try {
+					const requestOptions = createRequestOptions('GET', null, true);
+					const response = await fetch(`${baseURL}/service_request`, requestOptions);
+					return await handleResponse(response);
+				}
 				catch (error) {
-					return false
+					console.error("Error getting service requests", error);
+					return false;
 				}
 			},
-			cancelServiceRequest: async (filteredServiceRequestId)=>{
-				const store = getStore()
-				const actions = getActions()
+			cancelServiceRequest: async (filteredServiceRequestId) => {
 				try {
-					const requestOptions ={
-						method: 'DELETE',
-						headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-					}
-					const response = await fetch(`${store.baseURL}/service_request/${filteredServiceRequestId}`, requestOptions)
-					if( response.ok ){
-						actions.getServicesRequests()
-						return 201
+					const requestOptions = createRequestOptions('DELETE', null, true);
+					const response = await fetch(`${baseURL}/service_request/${filteredServiceRequestId}`, requestOptions);
+					if (response.ok) {
+						await getActions().getServicesRequests();
+						return 201;
 					}
 				} catch (error) {
-					
+					console.error("Error canceling service request", error);
 				}
 			},
-			offerServiceRequest: async (data, requestServiceOffer)=>{
-				const store = getStore()
-				const actions = getActions()
+			offerServiceRequest: async (data, requestServiceOffer) => {
+				const store = getStore();
 				const newData = {
 					"vendor_email": store.loggedUser.email,
 					...data,
 					...requestServiceOffer
-				}				 				 												
+				}
 				try {
-					const requestOptions = {
-						method: 'POST',
-						headers: {'Content-Type':'application/JSON', 'Authorization': `Bearer ${localStorage.getItem('token')}`},
-						body: JSON.stringify(newData)
-					}
-					const response = await fetch(`${store.baseURL}/service_request_offer`, requestOptions)
-					if(response.ok){
-						actions.getServicesRequests()
+					const requestOptions = createRequestOptions('POST', newData, true);
+					const response = await fetch(`${baseURL}/service_request_offer`, requestOptions);
+					if (response.ok) {
+						await getActions().getServicesRequests();
 						return 201
 					}
-					
 				} catch (error) {
-					
+					console.error("Error offering service request", error);
 				}
 			},
-			getServicesRequestsOffers: async ()=>{
-				const store = getStore()
+			getServicesRequestsOffers: async () => {
+				try {
+					const requestOptions = createRequestOptions('GET', null, true);
+					const response = await fetch(`${baseURL}/service_request_offer`, requestOptions)
+					return await handleResponse(response);
+				} catch (error) {
+					console.error("Error getting service request offers", error);
+					return false;
+				}
+			},
+			getOfferKnowedle: async () => {
+				try {
+					const requestOptions = createRequestOptions('GET', null, true);
+					const response = await fetch(`${baseURL}/offer_knowledge`, requestOptions)
+					return await handleResponse(response);
+				} catch (error) {
+					console.error("Error getting offer knowledge", error);
+					return false;
+				}
+			},
+			updateServicesRequestsOffers: async (index, data) => {
+				try {
+					const requestOptions = createRequestOptions('PUT', data, true);
+					const response = await fetch(`${baseURL}/service_request_offer/${index.service_request_offer_id}/${index.service_request_id}`, requestOptions);
+					if (response.ok) {
+						await getActions().getServicesRequests();
+						await getActions().getServicesRequestsOffers();
+						return 201;
+					}
+				} catch (error) {
+					console.error("Error updating services request offer", error);
+				}
+			},
+			updateProfilePicture: async (pictureFile) => {
 				try {
 					const requestOptions = {
-						method: 'GET',
-						headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
-					}
-					const response = await fetch(`${store.baseURL}/service_request_offer`, requestOptions)
-					const data = await response.json()
-
-					if( response.ok ){
-						return data
-					}
-					return false
-				} catch (error) {
-					return false
-				}
-			},
-			getOfferKnowedle: async ()=>{
-				const store = getStore()
-				try {
-					const requestOptions = {
-						method: 'GET',
-						headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
-					}
-					const response = await fetch(`${store.baseURL}/offer_knowledge`, requestOptions)
-					const data = await response.json()
-					
-					if( response.ok ){
-						return data
-					}
-					return false
-				} catch (error) {
-					return false
-				}
-			},
-			updateServicesRequestsOffers: async (index,data)=>{
-				const store = getStore()
-				const actions = getActions()
-				try {
-					const requestOptions = {
-						method: 'PUT',
-						headers: {'Content-Type':'application/JSON', 'Authorization': `Bearer ${localStorage.getItem('token')}`},
-						body: JSON.stringify(data)
-					}
-					const response = await fetch(`${store.baseURL}/service_request_offer/${index.service_request_offer_id}/${index.service_request_id}`, requestOptions)
-
-					if(response.ok){
-						actions.getServicesRequests()
-						actions.getServicesRequestsOffers()
-						return 201
-					}
-					
-				} catch (error) {
-					
-				}
-			},
-			updateProfilePicture: async (pictureFile) =>{
-				const store = getStore()
-				try {
-					const response = await fetch(`${store.baseURL}/upload_profile_picture`, {
 						method: ['PUT'],
-						body: pictureFile,
-						headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
-					})
-					return response.status
+						headers: { 'Authorization': `Bearer ${TOKEN}` },						
+						body: pictureFile
+					};
+					const response = await fetch(`${baseURL}/upload_profile_picture`, requestOptions);
+					return response.status;
 				} catch (error) {
-					
+					console.error("Error updating profile picture", error);
+					return false;
 				}
 			},
-			uploadGalleryPicture: async (galleryPicture) =>{
-				const store = getStore()
-
+			uploadGalleryPicture: async (galleryPicture) => {
 				try {
-					const response = await fetch(`${store.baseURL}/user_gallery_pictures`, {
+					const requestOptions = {
 						method: ['POST'],
-						body: galleryPicture,
-						headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
-					})
-					return response.status
-					
+						headers: { 'Authorization': `Bearer ${TOKEN}` },
+						body: galleryPicture
+					};
+					const response = await fetch(`${baseURL}/user_gallery_pictures`, requestOptions);
+					return response.status;
 				} catch (error) {
-					console.log('Error uploading gallery picture', error)
+					console.log('Error uploading gallery picture', error);
+					return false;
 				}
 			},
-			getGalleryPictures: async () =>{
-				const store = getStore()
+			getGalleryPictures: async () => {
 				try {
 					const requestOptions = {
 						method: ['GET'],
-						headers: {'Authorization': `Bearer ${localStorage.getItem('token')}`}
+						headers: { 'Authorization': `Bearer ${TOKEN}` }
 					}
-					const response = await fetch(`${store.baseURL}/user_gallery_pictures`, requestOptions)
-					const data = await response.json()
-					if(response.ok){
-						return data
-					}
-					return false
+					const response = await fetch(`${baseURL}/user_gallery_pictures`, requestOptions);
+					return await handleResponse(response);
 				} catch (error) {
-					return false
+					console.error("Error getting gallery pictures", error);
+					return false;
 				}
 			},
 		}
 	};
 };
-
 export default getState;

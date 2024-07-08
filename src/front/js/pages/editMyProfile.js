@@ -41,7 +41,7 @@ export const EditMyProfile = () => {
     const saveInformation = async (e) =>{
         e.preventDefault()
         const result = await actions.updateUserInformation(user)
-        if( result == 201){
+        if( result === 201){
             navigate('/myProfile')
         }
     }
@@ -82,11 +82,11 @@ export const EditMyProfile = () => {
     useEffect( ()=> {
         if(store.loggedUser){
             setUser({
-                "full_name": store.loggedUser.full_name,
-                "date_of_birth": store.loggedUser.date_of_birth,
+                "full_name": store.loggedUser.full_name || "",
+                "date_of_birth": store.loggedUser.date_of_birth || "",
                 "address": store.loggedUser.address,
-                "profile_resume": store.loggedUser.profile_resume,
-                "knowledge": store.loggedUser.knowledge
+                "profile_resume": store.loggedUser.profile_resume || "",
+                "knowledge": store.loggedUser.knowledge || []
             }),
             setShowingProfilePicture(store.loggedUser.profile_picture)
         }
@@ -110,7 +110,11 @@ export const EditMyProfile = () => {
                 <h1 className="primary-text">Profile data</h1>
                     <div className="profile-header-edit text-center mb-4">
                         <div className="profile-picture-edit-container">
-                            <img src={showingProfilePicture ? showingProfilePicture : defaultProfilePicture} className="profile-picture-edit" alt="Profile"/>
+                            <img 
+                                src={showingProfilePicture || defaultProfilePicture} 
+                                className="profile-picture-edit" 
+                                alt="Profile"
+                            />
                             <button 
                                 type="button" 
                                 className="btn btn-light ms-2 edit-picture-btn" 
@@ -121,7 +125,6 @@ export const EditMyProfile = () => {
                             </button>
                         </div>                        
                     </div>
-
                     <form>
                     <div className="mb-3">
                         <label htmlFor="full_name" className="form-label">Full name</label>
@@ -141,7 +144,7 @@ export const EditMyProfile = () => {
                             </div>                                                       
                         </div>
                         <div className="form-floating">
-                            <textarea className="form-control" placeholder="Profile resume" style={{height: "100px"}} type="text" 
+                            <textarea className="form-control" placeholder="Profile resume" style={{height: "100px"}}
                                 name="profile_resume" value={user.profile_resume} onChange={handleChange}></textarea>
                             <label htmlFor="profile_resume">Profile resume</label>
                         </div>

@@ -1,19 +1,19 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Context } from "../store/appContext";
 import "../../styles/home.css";
 import countries from "../../json/countries.json"
 
 export const SignUp = () => {
-    const {store, actions} = useContext(Context)
+    const {actions} = useContext(Context)
     const navigate = useNavigate()
     const [user, setUser] = useState({
         "email": "",
         "password": "",
-        "is_active": true,
         "gender": "",
         "nationality": "",
-        "role": ""
+        "role": "",
+        "phone_number": ""
     })    
 
     const saveUSer = async (e) =>{
