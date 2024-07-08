@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 015c1f9df142
+Revision ID: c931f6575547
 Revises: 
-Create Date: 2024-05-25 22:36:35.875156
+Create Date: 2024-07-08 13:06:40.012630
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '015c1f9df142'
+revision = 'c931f6575547'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -39,17 +39,17 @@ def upgrade():
     op.create_table('user',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sa.String(length=120), nullable=False),
-    sa.Column('password', sa.String(length=80), nullable=False),
+    sa.Column('password', sa.String(length=200), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('full_name', sa.String(length=250), nullable=True),
     sa.Column('date_of_birth', sa.String(), nullable=True),
-    sa.Column('phone_number', sa.Integer(), nullable=True),
+    sa.Column('phone_number', sa.BigInteger(), nullable=False),
     sa.Column('address', sa.String(length=120), nullable=True),
-    sa.Column('profile_resume', sa.String(length=350), nullable=True),
+    sa.Column('profile_resume', sa.String(length=400), nullable=True),
     sa.Column('role', sa.Enum('client', 'vendor', name='roles'), nullable=False),
-    sa.Column('gender', sa.Enum('non_binary', 'female', 'male', name='choosegender'), nullable=True),
+    sa.Column('gender', sa.Enum('non_binary', 'female', 'male', name='choosegender'), nullable=False),
     sa.Column('profile_picture', sa.String(length=100), nullable=True),
-    sa.Column('nationality', sa.String(length=120), nullable=True),
+    sa.Column('nationality', sa.String(length=120), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('phone_number')
@@ -61,15 +61,6 @@ def upgrade():
     sa.ForeignKeyConstraint(['service_subcategory_id'], ['servicesubcategory.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
-    )
-    op.create_table('personaldocument',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('type', sa.Enum('national_id', 'passport', 'driver_license', name='typeofdocument'), nullable=False),
-    sa.Column('code', sa.String(length=120), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('code')
     )
     op.create_table('pictureuserupload',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -122,7 +113,6 @@ def downgrade():
     op.drop_table('servicerequest')
     op.drop_table('servicecategorysubcategory')
     op.drop_table('pictureuserupload')
-    op.drop_table('personaldocument')
     op.drop_table('offerknowledge')
     op.drop_table('user')
     op.drop_table('servicesubcategory')

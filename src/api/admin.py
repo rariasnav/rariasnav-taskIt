@@ -1,7 +1,7 @@
   
 import os
 from flask_admin import Admin
-from .models import db, User, PersonalDocument, ServiceCategory, ServiceSubCategory, ServiceCategorySubCategory, ServiceRequest, ServiceRequestOffer, OfferKnowledge, PictureUserUpload
+from .models import db, User, ServiceCategory, ServiceSubCategory, ServiceCategorySubCategory, ServiceRequest, ServiceRequestOffer, OfferKnowledge, PictureUserUpload
 from flask_admin.contrib.sqla import ModelView
 
 def setup_admin(app):
@@ -12,8 +12,6 @@ def setup_admin(app):
     
     # Add your models here, for example this is how we add a the User model to the admin
     admin.add_view(ModelView(User, db.session))
-    # admin.add_view(ModelView(Country, db.session))
-    admin.add_view(ModelView(PersonalDocument, db.session))
     admin.add_view(ModelView(ServiceCategory, db.session))
     admin.add_view(ModelView(ServiceSubCategory, db.session))
     admin.add_view(ModelView(ServiceCategorySubCategory, db.session))

@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint, current_app
-from api.models import db, User, PersonalDocument, ServiceCategory, ServiceSubCategory, ServiceCategorySubCategory, ServiceRequest, ServiceRequestOffer, OfferKnowledge, PictureUserUpload
+from api.models import db, User, ChooseGender, Roles, ServiceSubCategory, ServiceCategorySubCategory, ServiceRequest, ServiceRequestOffer, OfferKnowledge, PictureUserUpload
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -10,7 +10,11 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from werkzeug.security import generate_password_hash
+
 import cloudinary.uploader
+import re
 
 api = Blueprint('api', __name__)
 
@@ -27,74 +31,50 @@ def handle_hello():
 
     return jsonify(response_body), 200
 
-@api.route('/user', methods=['GET'])
-def get_all_users():
-    all_users = User.query.all()
-    result = list(map(lambda user: user.serialize(), all_users))
-
-    return jsonify(result), 200
-
-@api.route('/user/<int:user_id>', methods=['GET'])
-def get_one_user(user_id):
-    user = User.query.filter_by(id=user_id).first()
-
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-    
-    knowledges = OfferKnowledge.query.filter_by(user_id=user.id).all()
-    serialized_knowledges = list(map(lambda knowledge: knowledge.serialize_client(), knowledges))
-
-    response = {
-        'user': user.serialize(),
-        'knowledge': serialized_knowledges
-    }
-
-    return jsonify(response), 200
-
-@api.route('/user_client/<int:user_id>', methods=['GET'])
-def get_one_user_client(user_id):
-    user = User.query.filter_by(id=user_id).first()
-
-    return jsonify(user.serialize()), 200
-
-
-@api.route('/user/<int:user_id>', methods=['DELETE'])
-def delete_one_user(user_id):
-    user = User.query.filter_by(id=user_id).first()
-
-    db.session.delete(user)
-    db.session.commit()
-
-    response_body = {
-        "msg" : "User deleted"
-    }
-    return jsonify(response_body), 200
-
 @api.route('/signup', methods=['POST'])
 def create_user():
     body = request.get_json()
-    user = User.query.filter_by(email=body['email']).first()
 
-    if user != None:
-        return jsonify({ "msg": "Email already in use" })
+    required_fields = ['email', 'password', 'nationality', 'gender', 'phone_number', 'role']
+    for field in required_fields:
+        if field not in body:
+            return jsonify({"msg": f"Missing field {field}"}), 400
 
-    if user == None:
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    if not re.match(email_regex, body['email']):
+        return jsonify({"msg": "Invalid email format"}), 400
+
+    if User.query.filter_by(email=body['email']).first():
+        return jsonify({"msg": "Email already in use"}), 400
+    
+    try:
         password_hash = current_app.bcrypt.generate_password_hash(body['password']).decode('utf-8')
+
         new_user = User(
-            email = body['email'],
-            password = password_hash,
-            nationality = body['nationality'],
-            gender = body['gender'],
-            phone_number = body['phone_number'],
-            is_active = True,
-            role = body['role']
+            email=body['email'],
+            password=password_hash,
+            nationality=body['nationality'],
+            gender=ChooseGender[body['gender']],
+            phone_number=body['phone_number'],
+            is_active=True,
+            role=Roles[body['role']]
         )
         db.session.add(new_user)
-        db.session.commit()
-        
+        db.session.commit()        
 
-        return jsonify({ 'msg': 'User created' }), 200
-    
+        return jsonify({ 'msg': 'User created' }), 201
+
+    except KeyError as e:
+        return jsonify({"msg": f"Invalid value for field: {str(e)}"}), 400
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"msg": "Database error ocurred"}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"An error ocurred: {str(e)}"}), 500
+
+
+#user update password and email
 @api.route('/user_update/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     body = request.get_json()
@@ -115,32 +95,51 @@ def update_user(user_id):
     
 @api.route('/login', methods=['POST'])
 def login():
-    email = request.json.get("email", None)
-    password = request.json.get("password", None)
-    user = User.query.filter_by(email=email).first()
+    try:
+        email = request.json.get("email", None)
+        password = request.json.get("password", None)
+        user = User.query.filter_by(email=email).first()
 
-    if user is None:
-        return jsonify({ 'msg': 'Email not in system' }), 401
+        if user is None or not current_app.bcrypt.check_password_hash(user.password, password):
+            return jsonify({"msg": "Bad email or password"}), 401
+
+        access_token = create_access_token(identity=email)        
+        user_data = {
+            "id": user.id,
+            "email": user.email,
+            "role": user.role.name
+        }
+        return jsonify(user=user_data, access_token=access_token), 200        
     
-    decrypted_password = current_app.bcrypt.check_password_hash(user.password, password)
+    except Exception as e:
+        current_app.logger.error(f"An error ocurred: {str(e)}")
+        return jsonify({"msg": "Internal server error"}), 500
 
-    if email != user.email or decrypted_password is False:
-        return jsonify({"msg": "Bad email or password"}), 401
-
-    access_token = create_access_token(identity=email)
-    return jsonify(user=user.serialize(), access_token=access_token)
 
 @api.route('/profile', methods=['GET'])
 @jwt_required()
 def profile():
-    user_email = get_jwt_identity()
-    user = User.query.filter_by(email=user_email).first()
+    try:
+        user_email = get_jwt_identity()
+        user = User.query.filter_by(email=user_email).first()
+        if not user:
+            return jsonify({"msg": "User not found"}), 404
 
-    response_body = {
-        "msg": "User found",
-        "user": user.serialize()
-    }
-    return jsonify(response_body), 200
+        user_data = user.serialize()
+
+        if user.role == Roles.vendor:
+            user_data = user.serialize_vendor_knowledge()
+
+        response_body = {
+            "msg": "User found",
+            "user": user_data
+        }
+
+        return jsonify(response_body), 200
+
+    except Exception as e:
+        current_app.logger.error(f"An error ocurred: {str(e)}")
+        return jsonify({"msg": "Internal server error"}), 500
 
 @api.route('/user_information', methods=['PUT'])
 @jwt_required()
@@ -148,25 +147,30 @@ def fill_user_information():
     email = get_jwt_identity()
     body = request.get_json()  
     user = User.query.filter_by(email=email).first()
+
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
         
     for key in body:
         for col in user.serialize():
             if key == col and key != "id":
-                setattr(user, col, body[key])
+                setattr(user, key, body[key])
 
-    if "knowledge" in body:
+    if user.role == Roles.vendor and "knowledge" in body:
         for subcategory_id in body['knowledge']:
-            subcategory_exist = OfferKnowledge.query.filter_by(user_id=user.id, service_subcategory_id=subcategory_id).first()
-            if not subcategory_exist:
+            if not OfferKnowledge.query.filter_by(user_id=user.id, service_subcategory_id=subcategory_id).first():
                 new_offer_knowledge = OfferKnowledge(user_id=user.id, service_subcategory_id=subcategory_id)
                 db.session.add(new_offer_knowledge)
 
-    db.session.commit()
-    
-    response_body = {
-        "msg": "succesfully updated"
-    }
-    return jsonify(response_body), 200
+    try:
+        db.session.commit()        
+        response_body = {
+            "msg": "succesfully updated"
+        }
+        return jsonify(response_body), 200    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": str(e)}), 500
 
 @api.route('/services_category', methods=['GET'])
 def get_all_services_category():

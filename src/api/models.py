@@ -16,19 +16,17 @@ class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(80), unique=False, nullable=False)
+    password = db.Column(db.String(200), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
     full_name = db.Column(db.String(250), unique=False, nullable=True)
     date_of_birth = db.Column(db.String, unique=False, nullable=True)       
-    phone_number = db.Column(db.Integer, unique=True, nullable=True)
+    phone_number = db.Column(db.BigInteger, unique=True, nullable=False)
     address = db.Column(db.String(120), unique=False, nullable=True)
-    profile_resume = db.Column(db.String(350), unique=False, nullable=True)
+    profile_resume = db.Column(db.String(400), unique=False, nullable=True)
     role = db.Column(db.Enum(Roles), unique=False, nullable=False)
-    gender = db.Column(db.Enum(ChooseGender), unique=False, nullable=True)
+    gender = db.Column(db.Enum(ChooseGender), unique=False, nullable=False)
     profile_picture = db.Column(db.String(100), unique=False, nullable=True)
-    personal_document = db.relationship('PersonalDocument', backref='user', lazy=True)       
-    # nationality_id = db.Column(db.Integer, db.ForeignKey('country.id'), nullable=True)
-    nationality = db.Column(db.String(120), unique=False, nullable=True)
+    nationality = db.Column(db.String(120), unique=False, nullable=False)
     service_request = db.relationship('ServiceRequest', backref='user', lazy=True) 
     offer_knowledge = db.relationship('OfferKnowledge', backref='user', lazy=True) 
     picture_user_upload = db.relationship('PictureUserUpload', backref='user', lazy=True) 
@@ -38,14 +36,7 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.email}>'
 
-    def serialize(self):
-        personal_documents = PersonalDocument.query.filter_by(user_id=self.id)
-        personal_documents = list(map(lambda document: document.serialize(), personal_documents))
-        
-        # country = Country.query.get(self.nationality_id)
-        # if country is not None:
-        #     country = country.serialize()        
-        
+    def serialize(self):   
         return {
             "id": self.id,
             "email": self.email,
@@ -57,11 +48,12 @@ class User(db.Model):
             "role": self.role.name,
             "gender": self.gender.name,
             "profile_resume": self.profile_resume,
-            "personal_documents": personal_documents,
             "nationality": self.nationality,
             "profile_picture": self.profile_picture
         }
     def serialize_vendor_knowledge(self):
+        if self.role != Roles.vendor:
+            return None
         knowledge = OfferKnowledge.query.filter_by(user_id=self.id).first()
         if knowledge is not None:
             knowledge = knowledge.serialize_client()
@@ -69,43 +61,6 @@ class User(db.Model):
             'user': self.serialize(),
             'knowledge': knowledge
         }    
-    
-# class Country(db.Model):
-#     __tablename__ = 'country'
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(120), unique=True, nullable=False)
-#     user = db.relationship('User', backref='country', lazy=True)       
-
-#     def __repr__(self):
-#         return f'<Country {self.name}>'
-
-#     def serialize(self):
-#         return {
-#             "id": self.id,
-#             "name": self.name
-#         }
-
-class TypeOfDocument(enum.Enum):
-    national_id = 'national_id'
-    passport = 'passport'
-    driver_license = 'driver_license'
-
-class PersonalDocument(db.Model):
-    __tablename__ = 'personaldocument'
-    id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.Enum(TypeOfDocument), unique=False, nullable=False)       
-    code = db.Column(db.String(120), unique=True, nullable=False) 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
-    def __repr__(self):
-        return f'<PersonalDocument {self.code}>'
-
-    def serialize(self):
-        return {
-            "id": self.id,
-            "type": self.type.name,
-            "code": self.code
-        }
 
 class ServiceCategory(db.Model):
     __tablename__ = 'servicecategory'
