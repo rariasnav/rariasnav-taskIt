@@ -66,10 +66,10 @@ class ServiceCategory(db.Model):
     __tablename__ = 'servicecategory'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
-    is_active = db.Column(db.Boolean(), unique=False, nullable=False)
-    icon = db.Column(db.String(80), unique=False, nullable=False)
-    image = db.Column(db.String(250), unique=False, nullable=True)
-    description = db.Column(db.String(120), unique=False, nullable=False)
+    is_active = db.Column(db.Boolean(), nullable=False, default=True)
+    icon = db.Column(db.String(80), nullable=False)
+    image = db.Column(db.String(250), nullable=True)
+    description = db.Column(db.String(120), nullable=False)
     service_category_subcategory = db.relationship('ServiceCategorySubCategory', backref='servicecategory', lazy=True) 
     
     def __repr__(self):
@@ -89,8 +89,8 @@ class ServiceSubCategory(db.Model):
     __tablename__ = 'servicesubcategory'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
-    is_active = db.Column(db.Boolean(), unique=False, nullable=False)
-    description = db.Column(db.String(250), unique=False, nullable=False)
+    is_active = db.Column(db.Boolean(), nullable=False, default=True)
+    description = db.Column(db.String(250), nullable=False)
     service_category_subcategory = db.relationship('ServiceCategorySubCategory', backref='servicesubcategory', lazy=True) 
     service_request = db.relationship('ServiceRequest', backref='servicesubcategory', lazy=True)
     offer_knowledge = db.relationship('OfferKnowledge', backref='servicesubcategory', lazy=True)
@@ -136,15 +136,15 @@ class ServiceRequestStatus(enum.Enum):
     
 class ServiceRequest(db.Model):
     __tablename__='servicerequest'
-    id = db.Column(db.Integer, primary_key=True)
-    service_subcategory_id = db.Column(db.Integer, db.ForeignKey('servicesubcategory.id'), nullable=False)
-    is_active = db.Column(db.Boolean(), unique=False, nullable=False)
+    id = db.Column(db.Integer, primary_key=True)    
+    is_active = db.Column(db.Boolean(), nullable=False, default=True)
     status = db.Column(db.Enum(ServiceRequestStatus), unique=False, nullable=False)
-    description = db.Column(db.String(250), unique=False, nullable=False)
-    address = db.Column(db.String(80), unique=False, nullable=False)
-    tools = db.Column(db.String(250), unique=False, nullable=False)
-    moving = db.Column(db.String(250), unique=False, nullable=False)
+    description = db.Column(db.String(250), nullable=False)
+    address = db.Column(db.String(80), nullable=False)
+    tools = db.Column(db.String(250), nullable=True)
+    moving = db.Column(db.String(250), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    service_subcategory_id = db.Column(db.Integer, db.ForeignKey('servicesubcategory.id'), nullable=False)
     service_request_offer = db.relationship('ServiceRequestOffer', backref='servicerequest', lazy=True)
 
     def __repr__(self):
@@ -178,11 +178,11 @@ class ServiceRequestOfferStatus(enum.Enum):
 class ServiceRequestOffer(db.Model):
     __tablename__='servicerequestoffer'
     id = db.Column(db.Integer, primary_key=True)
+    status = db.Column(db.Enum(ServiceRequestOfferStatus), nullable=False)
+    rate = db.Column(db.Integer, nullable=False)
     service_request_id = db.Column(db.Integer, db.ForeignKey('servicerequest.id'), nullable=False)
-    status = db.Column(db.Enum(ServiceRequestOfferStatus), unique=False, nullable=False)
     user_client_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    user_vendor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    rate = db.Column(db.Integer, unique=False, nullable=False)
+    user_vendor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)    
 
     def __repr__(self):
         return f'<ServiceRequestOffer {self.id}>'
@@ -244,9 +244,9 @@ class OfferKnowledge(db.Model):
 class PictureUserUpload(db.Model):
     __tablename__ = 'pictureuserupload'
     id = db.Column(db.Integer, primary_key=True)
+    gallery_pictures = db.Column(db.String(100), nullable=True)
+    gallery_pictures_public_id = db.Column(db.String(80), nullable=True)    
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    gallery_pictures = db.Column(db.String(100), unique=False, nullable=True)
-    gallery_pictures_public_id = db.Column(db.String(80), unique=False, nullable=True)
 
     def __repr__(self):
         return f'<PictureUserUpload {self.id}>'
