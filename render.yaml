@@ -32,10 +32,7 @@ services:
                 name: postgresql-trapezoidal-42170
                 property: connectionString
           - key: BACKEND_URL
-            fromService:
-              type: web
-              name: backend-service-name
-              property: hostport
+            value: "your backend url"
 
 databases: # Render PostgreSQL database
     - name: postgresql-trapezoidal-42170
