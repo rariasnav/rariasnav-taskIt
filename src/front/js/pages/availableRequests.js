@@ -1,10 +1,11 @@
 import React, {useContext, useEffect, useState} from "react";
 import { Context } from "../store/appContext";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { getData } from "../utils/getData";
 import "../../styles/home.css";
 
 export const AvailableRequests = () =>{
-    const {actions, store} = useContext(Context)
+    const {actions} = useContext(Context)
     const navigate = useNavigate()
     const [requests, setRequests] = useState([])   
     const [knowledge, setKnowledge] = useState([])    
@@ -31,23 +32,11 @@ export const AvailableRequests = () =>{
     }
 
     useEffect( ()=>{
-        const getData = async () => {
-            const response = await actions.getServicesRequests()
-            if(response){
-                setRequests(response)
-            }
-        } 
-        getData()        
+        getData(actions.getServicesRequests, setRequests);        
     },[])
 
     useEffect( ()=>{
-        const getData = async () => {
-            const response = await actions.getOfferKnowedle()
-            if(response){
-                setKnowledge(response)
-            }
-        } 
-        getData()        
+        getData(actions.getOfferKnowledge, setKnowledge); 
     },[])
 
     useEffect( ()=> {

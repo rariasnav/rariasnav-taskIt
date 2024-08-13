@@ -1,16 +1,17 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Context } from "../store/appContext";
+import { getData } from "../utils/getData";
 import "../../styles/home.css";
 
 export const Home = () => {
 	const { store, actions } = useContext(Context);
-	const navigate = useNavigate()	
-	const [query, setQuery] = useState("")	
-	const [users, setUsers] = useState([])
-	const [categories, setCategories] = useState([])
-	const [subcategories, setSubcategories] = useState([])
-	const [displaySubcategories, setDisplaySubcategories] = useState([])
+	const navigate = useNavigate();
+	const [query, setQuery] = useState("");
+	const [users, setUsers] = useState([]);
+	const [categories, setCategories] = useState([]);
+	const [subcategories, setSubcategories] = useState([]);
+	const [displaySubcategories, setDisplaySubcategories] = useState([]);
 	
 	const getRandomSubcategory = (array, num) =>{
 		const shuffled = array.slice();
@@ -22,33 +23,15 @@ export const Home = () => {
 	}
 
 	useEffect( ()=>{
-        const getData = async () => {
-            const response = await actions.loadTestData()
-            if(response){
-                setUsers(response)
-            }
-        } 
-        getData()        
+        getData(actions.loadTestData, setUsers);     
     },[])
 
 	useEffect( ()=>{
-        const getData = async () => {
-            const response = await actions.getCategories()
-            if(response){
-                setCategories(response)
-            }
-        } 
-        getData()        
+		getData(actions.getCategories, setCategories);       
     },[])
 
 	useEffect( ()=>{
-        const getData = async () => {
-            const response = await actions.getSubcategories()
-            if(response){
-                setSubcategories(response)
-            }
-        } 
-        getData()        
+		getData(actions.getSubcategories, setSubcategories);  
     },[])
 
 	useEffect( ()=>{

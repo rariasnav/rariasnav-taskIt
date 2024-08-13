@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Context } from "../store/appContext";
 import { useNavigate, Navigate } from "react-router-dom";
+import { getData } from "../utils/getData";
 import "../../styles/home.css";
-import defaultProfilePicture from "../../../../docs/assets/defaultProfilePicture.jpg"
-import { act } from "react-dom/test-utils";
+import defaultProfilePicture from "../../../../docs/assets/defaultProfilePicture.jpg";
 
 export const GetInMyProfile = () =>{
     const {store, actions} = useContext(Context)
@@ -65,13 +65,7 @@ export const GetInMyProfile = () =>{
     }
 
     useEffect( ()=>{
-        const getData = async () =>{
-            const response = await actions.getOfferKnowedle()
-            if(response){
-                setOfferKnowledge(response)
-            }
-        }
-        getData()
+        getData(actions.getOfferKnowledge, setOfferKnowledge);
     },[actions])
 
     useEffect( ()=>{
@@ -85,14 +79,7 @@ export const GetInMyProfile = () =>{
     },[store.offerKnowledge, store.loggedUser, offerKnowledge])
 
     useEffect( ()=>{
-        const getData = async ()=>{
-            const response = await actions.getGalleryPictures()
-            if(response){
-                setGetGallery(response)
-            }
-
-        };
-        getData()
+        getData(actions.getGalleryPictures, setGetGallery);
     },[])
     
     useEffect( ()=>{

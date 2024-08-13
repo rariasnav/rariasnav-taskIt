@@ -1,6 +1,7 @@
 import React,{ useContext, useEffect, useState} from "react";
 import { Context } from "../store/appContext";
 import { useNavigate } from "react-router-dom";
+import { getData } from "../utils/getData";
 import "../../styles/home.css";
 
 export const PendingForApprovalRequests = () =>{
@@ -23,13 +24,7 @@ export const PendingForApprovalRequests = () =>{
     }
 
     useEffect( ()=>{
-        const getData = async () => {
-            const response = await actions.getServicesRequestsOffers()
-            if(response){
-                setServiceRequestOffered(response)
-            }
-        } 
-        getData()        
+        getData(actions.getServicesRequestsOffers, setServiceRequestOffered);      
     },[actions])
 
     useEffect( ()=>{
