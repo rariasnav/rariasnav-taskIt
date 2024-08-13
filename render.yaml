@@ -35,7 +35,7 @@ services:
             fromService:
               type: web
               name: backend-service-name
-              envVarKey: RENDER_EXTERNAL_HOSTNAME
+              property: hostport
 
 databases: # Render PostgreSQL database
     - name: postgresql-trapezoidal-42170
