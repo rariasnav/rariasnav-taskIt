@@ -4,7 +4,7 @@
 services:
     - type: web # valid values: https://render.com/docs/yaml-spec#type
       region: ohio
-      name: sample-service-name
+      name: taskit-ra
       env: python # valid values: https://render.com/docs/yaml-spec#environment
       buildCommand: "./render_build.sh"
       startCommand: "gunicorn wsgi --chdir ./src/"
@@ -21,10 +21,21 @@ services:
             value: "any key works"
           - key: PYTHON_VERSION
             value: 3.10.6
+          - key: CLOUDINARY_CLOUD_NAME
+            value: "your cloudinary cloud name"
+          - key: CLOUDINARY_API_KEY
+            value: "your cloudinary api key"
+          - key: CLOUDINARY_API_SECRET
+            value: "your cloudinary api secret"
           - key: DATABASE_URL # Render PostgreSQL database
             fromDatabase:
                 name: postgresql-trapezoidal-42170
                 property: connectionString
+          - key: BACKEND_URL
+            fromService:
+              type: web
+              name: backend-service-name
+              envVarKey: RENDER_EXTERNAL_HOSTNAME
 
 databases: # Render PostgreSQL database
     - name: postgresql-trapezoidal-42170

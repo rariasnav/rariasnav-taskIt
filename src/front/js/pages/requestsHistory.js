@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Context } from "../store/appContext";
 import { useNavigate } from "react-router-dom";
+import { getData } from "../utils/getData";
 import "../../styles/home.css";
 
 export const RequestsHistory = () => {
@@ -18,13 +19,7 @@ export const RequestsHistory = () => {
     }
 
     useEffect( ()=>{
-        const getData = async () =>{
-            const response = await actions.getServicesRequests()
-            if(response){
-                setServicesRequests(response)
-            }
-        }
-        getData()
+        getData(actions.getServicesRequests, setServicesRequests);
     },[actions, actions.getServicesRequests()])
 
     useEffect( ()=>{

@@ -1,7 +1,8 @@
 import React, {useContext, useEffect, useState} from "react";
 import { Context } from "../store/appContext";
-import "../../styles/home.css";
 import { useNavigate } from "react-router-dom";
+import { getData } from "../utils/getData";
+import "../../styles/home.css";
 
 export const RequestsServicesInProcess = () =>{
     const {actions, store} = useContext(Context)
@@ -11,13 +12,7 @@ export const RequestsServicesInProcess = () =>{
     const [offeredToMyUser, setOfferedToMyUser] = useState([])
 
     useEffect( ()=>{
-        const getData = async ()=> {
-            const response = await actions.getServicesRequestsOffers()
-            if(response	){
-                setServiceRequestOffered(response)
-            }
-        }
-        getData()
+        getData(actions.getServicesRequestsOffers, setServiceRequestOffered);
     },[actions])
 
     useEffect( ()=>{
@@ -34,7 +29,6 @@ export const RequestsServicesInProcess = () =>{
         }
         filterByUser()
     },[inProcessRequests, store.loggedUser])
-
     
     return(        
         <div className="container">

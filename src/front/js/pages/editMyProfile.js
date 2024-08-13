@@ -1,6 +1,7 @@
 import React, {useContext, useEffect, useState} from "react";
 import { Context } from "../store/appContext";
 import { useNavigate, Navigate } from "react-router-dom";
+import { getData } from "../utils/getData";
 import "../../styles/home.css";
 import defaultProfilePicture from "../../../../docs/assets/defaultProfilePicture.jpg"
 
@@ -93,13 +94,7 @@ export const EditMyProfile = () => {
     },[store.loggedUser] )
 
     useEffect( ()=>{
-        const getData = async () => {
-            const response = await actions.getSubcategories()
-            if(response){
-                setSubcategory(response)
-            }
-        } 
-        getData()        
+        getData(actions.getSubcategories, setSubcategory)      
     },[])
 
     return(

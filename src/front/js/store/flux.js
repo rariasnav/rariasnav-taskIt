@@ -241,7 +241,7 @@ const getState = ({ getStore, getActions, setStore }) => {
 					return false;
 				}
 			},
-			getOfferKnowedle: async () => {
+			getOfferKnowledge: async () => {
 				try {
 					const requestOptions = createRequestOptions('GET', null, true);
 					const response = await fetch(`${baseURL}/offer_knowledge`, requestOptions)

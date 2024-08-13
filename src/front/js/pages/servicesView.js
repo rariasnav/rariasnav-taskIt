@@ -1,6 +1,7 @@
 import React,{useContext, useEffect, useState} from "react";
 import { Link } from "react-router-dom";
 import { Context } from "../store/appContext";
+import { getData } from "../utils/getData";
 import "../../styles/home.css";
 
 export const ServicesView = () => {
@@ -9,23 +10,11 @@ export const ServicesView = () => {
     const [categoriesSubcategories, setCategoriesSubcategories] = useState([])
 
     useEffect( ()=>{
-        const getData = async () =>{
-            const response = await actions.getCategories()
-            if(response){
-                setCategories(response)
-            }
-        }
-        getData()
+        getData(actions.getCategories, setCategories);
     },[])
 
     useEffect( ()=>{
-        const getData = async () =>{
-            const  response = await actions.getCategoriesSubcategories()
-            if(response){
-                setCategoriesSubcategories(response)
-            }
-        }   
-        getData()     
+        getData(actions.getCategoriesSubcategories, setCategoriesSubcategories);   
     },[])
     
     return(
